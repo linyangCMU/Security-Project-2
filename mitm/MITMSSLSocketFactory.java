@@ -16,7 +16,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLServerSocket;
@@ -24,6 +23,8 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.math.BigInteger;
+
+import iaik.x509.X509Certificate;
 
 
 /**
@@ -100,16 +101,22 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 	public MITMSSLSocketFactory(String remoteCN, BigInteger serialno)
 		throws IOException,GeneralSecurityException, Exception
 	{
+		this();
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
-
+		X509Certificate forged_cert = new X509Certificate();
+		//we have this.ks available to generate principal
+		//what happens if we use ks to create a java cert which we then use to create
+		//a x509 cert that we can modify the DN and serialNUmber of
+		forged_cert.setSubjectDN(remoteCN);
+		forged_cert.setSerialNumber(serialno);
 		// iaik.x509.X509Certificate
 		// To convert from Java cert. to this, use new X509Certificate(javaCert.getEncoded())
 		// Signing: cert.sign(AlgorithID.sha256withRSAEncryption, issuerPK)
 		// See iaik.asn1.structures.Name <http://iaik.asn1.structures.Name>  (implements Principal)
 		// For extracting info (e.j., common name) from server's DN (domain name), use cert.getSubjectDN(), 
-		this();
+
 	}
 
 	public final ServerSocket createServerSocket(String localHost,
@@ -149,15 +156,15 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 	 */
 	private static class TrustEveryone implements X509TrustManager
 	{
-		public void checkClientTrusted(X509Certificate[] chain,
+		public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
 									   String authenticationType) {
 		}
 
-		public void checkServerTrusted(X509Certificate[] chain,
+		public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
 									   String authenticationType) {
 		}
 
-		public X509Certificate[] getAcceptedIssuers()
+		public java.security.cert.X509Certificate[] getAcceptedIssuers()
 		{
 			return null;
 		}
