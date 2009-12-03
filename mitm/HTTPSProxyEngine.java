@@ -12,7 +12,8 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLSession;
+import javax.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,8 +125,7 @@ public class HTTPSProxyEngine extends ProxyEngine
 
 				if (httpsConnectMatcher.find()) {//then we have a proxy CONNECT message!
 					// Discard any other plaintext data the client sends us:
-					while (in.read(buffer, 0, in.available()) > 0) {
-					}
+					while (in.read(buffer, 0, in.available()) > 0) { }
 
 					final String remoteHost = httpsConnectMatcher.group(1);
 
@@ -155,7 +155,13 @@ public class HTTPSProxyEngine extends ProxyEngine
 					String serverCN = null;
 					BigInteger serialno = null;
 					// TODO: add in code to get the remote server's CN  and serial number from its cert.
-
+					//have remoteSocket, remotePort, reomteHost need cert
+					SSLSession sslSession = remoteSocket.getSession();
+					java_cert  = sslSession.getPeerCertificateChain()[0];
+					serverCN = java_cert.getSubjectDN().getName();
+					System.out.println("serverCN = " + serverCN);
+					serialno = java_cert.getSerialNumber();
+					//System.out.println("num certs = " + peerCerts.size());
 					//We've already opened the socket, so might as well keep using it:
 					m_proxySSLEngine.setRemoteSocket(remoteSocket);
 

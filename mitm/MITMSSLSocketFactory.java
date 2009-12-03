@@ -103,6 +103,12 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
+
+		// iaik.x509.X509Certificate
+		// To convert from Java cert. to this, use new X509Certificate(javaCert.getEncoded())
+		// Signing: cert.sign(AlgorithID.sha256withRSAEncryption, issuerPK)
+		// See iaik.asn1.structures.Name <http://iaik.asn1.structures.Name>  (implements Principal)
+		// For extracting info (e.j., common name) from server's DN (domain name), use cert.getSubjectDN(), 
 		this();
 	}
 

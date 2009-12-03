@@ -65,7 +65,6 @@ public class MITMProxyServer
 
 		int timeout = 0;
 		String filename = null;
-
 		try {
 			for (int i=0; i<args.length; i++)
 				{
@@ -103,7 +102,6 @@ public class MITMProxyServer
 		catch (Exception e) {
 			throw printUsage();
 		}
-
 		if (timeout < 0) {
 			throw printUsage("Timeout must be non-negative");
 		}
