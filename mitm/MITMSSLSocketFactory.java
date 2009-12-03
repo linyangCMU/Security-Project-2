@@ -23,6 +23,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.math.BigInteger;
+import javax.security.auth.x500.X500Principal;
 
 import iaik.x509.X509Certificate;
 
@@ -105,11 +106,14 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
-		X509Certificate forged_cert = new X509Certificate();
+		X509Certificate forged_cert;
+    forged_cert = new X509Certificate();
+    X500Principal xprincipal;
+    xprincipal = new X500Principal(remoteCN);
 		//we have this.ks available to generate principal
 		//what happens if we use ks to create a java cert which we then use to create
 		//a x509 cert that we can modify the DN and serialNUmber of
-		forged_cert.setSubjectDN(remoteCN);
+		forged_cert.setSubjectDN(xprincipal);
 		forged_cert.setSerialNumber(serialno);
 		// iaik.x509.X509Certificate
 		// To convert from Java cert. to this, use new X509Certificate(javaCert.getEncoded())
