@@ -14,7 +14,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.PrivateKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.cert.Certificate;
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
@@ -107,35 +107,53 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 	public MITMSSLSocketFactory(String remoteCN, BigInteger serialno)
 		throws IOException,GeneralSecurityException, Exception
 	{
-		this();
+
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
 		X509Certificate forged_cert = new X509Certificate();
-    Name subject = new Name();
-    String[] cn_parts = remoteCN.split(", ?");
-    // This is because we get extra spaces when we don't have the " ?" part.
-    // throws everything off.
-    HashMap shortnames = new HashMap();
-    shortnames.put("C", ObjectID.country);
-    shortnames.put("CN", ObjectID.commonName);
-    shortnames.put("O", ObjectID.organization);
-    shortnames.put("L", ObjectID.locality);
-    shortnames.put("ST", ObjectID.stateOrProvince);
-    shortnames.put("DC", ObjectID.domainComponent);
-    shortnames.put("OU", ObjectID.organizationalUnit);
-    shortnames.put("STREET", ObjectID.streetAddress);
-    shortnames.put("SN", ObjectID.surName);
-    shortnames.put("T", ObjectID.title);
+		Name subject = new Name();
+		String[] cn_parts = remoteCN.split(", ?");
+		// This is because we get extra spaces when we don't have the " ?" part.
+		// throws everything off.
+		HashMap shortnames = new HashMap();
+		shortnames.put("C", ObjectID.country);
+		shortnames.put("CN", ObjectID.commonName);
+		shortnames.put("O", ObjectID.organization);
+		shortnames.put("L", ObjectID.locality);
+		shortnames.put("ST", ObjectID.stateOrProvince);
+		shortnames.put("DC", ObjectID.domainComponent);
+		shortnames.put("OU", ObjectID.organizationalUnit);
+		shortnames.put("STREET", ObjectID.streetAddress);
+		shortnames.put("SN", ObjectID.surName);
+		shortnames.put("T", ObjectID.title);
 
-    for (int i = 0; i < cn_parts.length; i++) {
-      String[] pieces = cn_parts[i].split("=");
-      if (shortnames.containsKey(pieces[0])) {
-        subject.addRDN((ObjectID)shortnames.get(pieces[0]), pieces[1]);
-      }
-    }
-		//we have this.ks available to generate principal
-		//what happens if we use ks to create a java cert which we then use to create
+		for (int i = 0; i < cn_parts.length; i++) {
+			String[] pieces = cn_parts[i].split("=");
+			if (shortnames.containsKey(pieces[0])) {
+				subject.addRDN((ObjectID)shortnames.get(pieces[0]), pieces[1]);
+			}
+		}
+		m_sslContext = SSLContext.getInstance("SSL");
+		final KeyManagerFactory keyManagerFactory =
+			KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+		System.out.println("kmfA =" + KeyManagerFactory.getDefaultAlgorithm());
+
+		final String keyStoreFile = System.getProperty(JSSEConstants.KEYSTORE_PROPERTY);
+		final char[] keyStorePassword = System.getProperty(JSSEConstants.KEYSTORE_PASSWORD_PROPERTY, "").toCharArray();
+		final String keyStoreType = System.getProperty(JSSEConstants.KEYSTORE_TYPE_PROPERTY, "jks");
+
+		final KeyStore keyStore;
+
+		if (keyStoreFile != null) {
+			keyStore = KeyStore.getInstance(keyStoreType);
+			keyStore.load(new FileInputStream(keyStoreFile), keyStorePassword);
+
+			this.ks = keyStore;
+		} else {
+			keyStore = null;
+		}
+
 		//a x509 cert that we can modify the DN and serialNUmber of
 		String ksalias = ks.aliases().nextElement();
 		System.out.println(ksalias);
@@ -144,21 +162,28 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		forged_cert.setSubjectDN(subject);
 		forged_cert.setSerialNumber(serialno);
 		forged_cert.setPublicKey(ks.getCertificate(ksalias).getPublicKey());
-        GregorianCalendar date = (GregorianCalendar)Calendar.getInstance();
-        forged_cert.setValidNotBefore(date.getTime());
-        date.add(Calendar.MONTH, 6);
-        forged_cert.setValidNotAfter(date.getTime());
-		final char[] keyStorePassword = System.getProperty(JSSEConstants.KEYSTORE_PASSWORD_PROPERTY, "").toCharArray();
-		Key myKey = ks.getKey(ksalias, keyStorePassword);
-		
-		forged_cert.sign(AlgorithmID.sha256WithRSAEncryption, (PrivateKey)myKey);
-		ks.setCertificateEntry("forgedcert", forged_cert);
-		// iaik.x509.X509Certificate
+		GregorianCalendar date = (GregorianCalendar)Calendar.getInstance();
+		forged_cert.setValidNotBefore(date.getTime());
+		date.add(Calendar.MONTH, 6);
+		forged_cert.setValidNotAfter(date.getTime());
 
-		// To convert from Java cert. to this, use new X509Certificate(javaCert.getEncoded())
-		// Signing: cert.sign(AlgorithID.sha256withRSAEncryption, issuerPK)
-		// See iaik.asn1.structures.Name <http://iaik.asn1.structures.Name>  (implements Principal)
-		// For extracting info (e.j., common name) from server's DN (domain name), use cert.getSubjectDN(), 
+		Key myKey = ks.getKey(ksalias, keyStorePassword);
+
+		forged_cert.sign(AlgorithmID.sha256WithRSAEncryption,(RSAPrivateKey)myKey);
+		ks.setCertificateEntry("forged_cert", forged_cert);
+		ks.deleteEntry(ksalias);
+
+		keyManagerFactory.init(keyStore, keyStorePassword);
+		System.out.println(myKey.getAlgorithm());
+		java.security.Security.setProperty("ssl.KeyManagerFactory.algorithm",myKey.getAlgorithm());
+		System.out.println(java.security.Security.getProperty("ssl.KeyManagerFactory.algorithm"));
+
+		m_sslContext.init(keyManagerFactory.getKeyManagers(),
+						  new TrustManager[] { new TrustEveryone() },
+						  null);
+
+		m_clientSocketFactory = m_sslContext.getSocketFactory();
+		m_serverSocketFactory = m_sslContext.getServerSocketFactory();
 
 	}
 
