@@ -152,14 +152,13 @@ public class HTTPSProxyEngine extends ProxyEngine
 						continue;
 					}
 
+					// adds in code to get the remote server's CN  and serial number from its cert.
+					// have remoteSocket, remotePort, reomteHost need cert
 					String serverCN = null;
 					BigInteger serialno = null;
-					// TODO: add in code to get the remote server's CN  and serial number from its cert.
-					//have remoteSocket, remotePort, reomteHost need cert
 					SSLSession sslSession = remoteSocket.getSession();
 					java_cert  = sslSession.getPeerCertificateChain()[0];
 					serverCN = java_cert.getSubjectDN().getName();
-					System.out.println("serverCN = " + serverCN);
 					serialno = java_cert.getSerialNumber();
 					//System.out.println("num certs = " + peerCerts.size());
 					//We've already opened the socket, so might as well keep using it:

@@ -27,6 +27,10 @@ import iaik.asn1.structures.Name;
 import iaik.asn1.ObjectID;
 import iaik.x509.X509Certificate;
 import java.util.HashMap;
+import iaik.asn1.structures.AlgorithmID;
+import java.security.Key;
+import java.util.GregorianCalendar;
+import java.util.Calendar;
 
 
 /**
@@ -123,9 +127,6 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
     shortnames.put("STREET", ObjectID.streetAddress);
     shortnames.put("SN", ObjectID.surName);
     shortnames.put("T", ObjectID.title);
-    System.out.println("length: " + cn_parts.length);
-    System.out.println("remoteCN: " + remoteCN);
-    System.out.println("cn_parts[1]: " + cn_parts[1]);
 
     for (int i = 0; i < cn_parts.length; i++) {
       String[] pieces = cn_parts[i].split("=");
@@ -133,12 +134,25 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
         subject.addRDN((ObjectID)shortnames.get(pieces[0]), pieces[1]);
       }
     }
-    System.out.println("subject: " + subject);
 		//we have this.ks available to generate principal
 		//what happens if we use ks to create a java cert which we then use to create
 		//a x509 cert that we can modify the DN and serialNUmber of
+		String ksalias = ks.aliases().nextElement();
+		System.out.println(ksalias);
+		X509Certificate my_cert = new X509Certificate(ks.getCertificate(ksalias).getEncoded());
+		forged_cert.setIssuerDN(subject);
 		forged_cert.setSubjectDN(subject);
 		forged_cert.setSerialNumber(serialno);
+		forged_cert.setPublicKey(ks.getCertificate(ksalias).getPublicKey());
+        GregorianCalendar date = (GregorianCalendar)Calendar.getInstance();
+        forged_cert.setValidNotBefore(date.getTime());
+        date.add(Calendar.MONTH, 6);
+        forged_cert.setValidNotAfter(date.getTime());
+		final char[] keyStorePassword = System.getProperty(JSSEConstants.KEYSTORE_PASSWORD_PROPERTY, "").toCharArray();
+		Key myKey = ks.getKey(ksalias, keyStorePassword);
+		
+		forged_cert.sign(AlgorithmID.sha256WithRSAEncryption, (PrivateKey)myKey);
+		ks.setCertificateEntry("forgedcert", forged_cert);
 		// iaik.x509.X509Certificate
 
 		// To convert from Java cert. to this, use new X509Certificate(javaCert.getEncoded())
