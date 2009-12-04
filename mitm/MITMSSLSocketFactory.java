@@ -23,9 +23,10 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.math.BigInteger;
-import javax.security.auth.x500.X500Principal;
-
+import iaik.asn1.structures.Name;
+import iaik.asn1.ObjectID;
 import iaik.x509.X509Certificate;
+import java.util.HashMap;
 
 
 /**
@@ -106,16 +107,40 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
-		X509Certificate forged_cert;
-    forged_cert = new X509Certificate();
-    X500Principal xprincipal;
-    xprincipal = new X500Principal(remoteCN);
+		X509Certificate forged_cert = new X509Certificate();
+    Name subject = new Name();
+    String[] cn_parts = remoteCN.split(", ?");
+    // This is because we get extra spaces when we don't have the " ?" part.
+    // throws everything off.
+    HashMap shortnames = new HashMap();
+    shortnames.put("C", ObjectID.country);
+    shortnames.put("CN", ObjectID.commonName);
+    shortnames.put("O", ObjectID.organization);
+    shortnames.put("L", ObjectID.locality);
+    shortnames.put("ST", ObjectID.stateOrProvince);
+    shortnames.put("DC", ObjectID.domainComponent);
+    shortnames.put("OU", ObjectID.organizationalUnit);
+    shortnames.put("STREET", ObjectID.streetAddress);
+    shortnames.put("SN", ObjectID.surName);
+    shortnames.put("T", ObjectID.title);
+    System.out.println("length: " + cn_parts.length);
+    System.out.println("remoteCN: " + remoteCN);
+    System.out.println("cn_parts[1]: " + cn_parts[1]);
+
+    for (int i = 0; i < cn_parts.length; i++) {
+      String[] pieces = cn_parts[i].split("=");
+      if (shortnames.containsKey(pieces[0])) {
+        subject.addRDN((ObjectID)shortnames.get(pieces[0]), pieces[1]);
+      }
+    }
+    System.out.println("subject: " + subject);
 		//we have this.ks available to generate principal
 		//what happens if we use ks to create a java cert which we then use to create
 		//a x509 cert that we can modify the DN and serialNUmber of
-		forged_cert.setSubjectDN(xprincipal);
+		forged_cert.setSubjectDN(subject);
 		forged_cert.setSerialNumber(serialno);
 		// iaik.x509.X509Certificate
+
 		// To convert from Java cert. to this, use new X509Certificate(javaCert.getEncoded())
 		// Signing: cert.sign(AlgorithID.sha256withRSAEncryption, issuerPK)
 		// See iaik.asn1.structures.Name <http://iaik.asn1.structures.Name>  (implements Principal)
