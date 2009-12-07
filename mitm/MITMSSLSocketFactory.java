@@ -174,7 +174,7 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		ks.setCertificateEntry("forged_cert", forged_cert);
 		ks.setKeyEntry("forged_key", myKey, keyStorePassword, 
 		    new Certificate[] { forged_cert });
-		ks.store(new FileOutputStream("/Users/seth/.keystore2"), keyStorePassword);
+		ks.store(new FileOutputStream("/tmp/.keystore2"), keyStorePassword);
 
 		ks.deleteEntry(ksalias);
 		keyManagerFactory.init(ks, keyStorePassword);
