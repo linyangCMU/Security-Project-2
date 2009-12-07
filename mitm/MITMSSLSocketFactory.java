@@ -8,6 +8,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -107,7 +108,7 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 	public MITMSSLSocketFactory(String remoteCN, BigInteger serialno)
 		throws IOException,GeneralSecurityException, Exception
 	{
-
+        // this();
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
@@ -137,7 +138,6 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		m_sslContext = SSLContext.getInstance("SSL");
 		final KeyManagerFactory keyManagerFactory =
 			KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-		System.out.println("kmfA =" + KeyManagerFactory.getDefaultAlgorithm());
 
 		final String keyStoreFile = System.getProperty(JSSEConstants.KEYSTORE_PROPERTY);
 		final char[] keyStorePassword = System.getProperty(JSSEConstants.KEYSTORE_PASSWORD_PROPERTY, "").toCharArray();
@@ -156,7 +156,7 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 
 		//a x509 cert that we can modify the DN and serialNUmber of
 		String ksalias = ks.aliases().nextElement();
-		System.out.println(ksalias);
+		System.out.println("Keystore alias: " + ksalias);
 		X509Certificate my_cert = new X509Certificate(ks.getCertificate(ksalias).getEncoded());
 		forged_cert.setIssuerDN(subject);
 		forged_cert.setSubjectDN(subject);
@@ -164,27 +164,28 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		forged_cert.setPublicKey(ks.getCertificate(ksalias).getPublicKey());
 		GregorianCalendar date = (GregorianCalendar)Calendar.getInstance();
 		forged_cert.setValidNotBefore(date.getTime());
-		date.add(Calendar.MONTH, 6);
+		date.add(Calendar.MONTH, 3);
+		System.out.println("forging certificate");
 		forged_cert.setValidNotAfter(date.getTime());
 
 		Key myKey = ks.getKey(ksalias, keyStorePassword);
 
-		forged_cert.sign(AlgorithmID.sha256WithRSAEncryption,(RSAPrivateKey)myKey);
+		forged_cert.sign(AlgorithmID.sha256WithRSAEncryption, (RSAPrivateKey) myKey);
 		ks.setCertificateEntry("forged_cert", forged_cert);
+		ks.setKeyEntry("forged_key", myKey, keyStorePassword, 
+		    new Certificate[] { forged_cert });
+		ks.store(new FileOutputStream("/Users/seth/.keystore2"), keyStorePassword);
+
 		ks.deleteEntry(ksalias);
-
-		keyManagerFactory.init(keyStore, keyStorePassword);
-		System.out.println(myKey.getAlgorithm());
-		java.security.Security.setProperty("ssl.KeyManagerFactory.algorithm",myKey.getAlgorithm());
-		System.out.println(java.security.Security.getProperty("ssl.KeyManagerFactory.algorithm"));
-
+		keyManagerFactory.init(ks, keyStorePassword);
+		// java.security.Security.setProperty("ssl.KeyManagerFactory.algorithm", myKey.getAlgorithm());
+		
 		m_sslContext.init(keyManagerFactory.getKeyManagers(),
 						  new TrustManager[] { new TrustEveryone() },
 						  null);
 
-		m_clientSocketFactory = m_sslContext.getSocketFactory();
 		m_serverSocketFactory = m_sslContext.getServerSocketFactory();
-
+  		m_clientSocketFactory = m_sslContext.getSocketFactory();
 	}
 
 	public final ServerSocket createServerSocket(String localHost,
@@ -197,7 +198,6 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 																	  localPort, 50, InetAddress.getByName(localHost));
 
 		socket.setSoTimeout(timeout);
-
 		socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
 
 		return socket;
@@ -211,7 +211,6 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 														  remotePort);
 
 		socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
-
 		socket.startHandshake();
 
 		return socket;

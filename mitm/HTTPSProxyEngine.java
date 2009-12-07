@@ -160,11 +160,11 @@ public class HTTPSProxyEngine extends ProxyEngine
 					java_cert  = sslSession.getPeerCertificateChain()[0];
 					serverCN = java_cert.getSubjectDN().getName();
 					serialno = java_cert.getSerialNumber();
-					//System.out.println("num certs = " + peerCerts.size());
-					//We've already opened the socket, so might as well keep using it:
+					// System.out.println("num certs = " + peerCerts.size());
+					// We've already opened the socket, so might as well keep using it:
 					m_proxySSLEngine.setRemoteSocket(remoteSocket);
 
-					//This is a CRUCIAL step:  we dynamically generate a new cert, based
+					// This is a CRUCIAL step:  we dynamically generate a new cert, based
 					// on the remote server's CN, and return a reference to the internal
 					// server socket that will make use of it.
 					ServerSocket localProxy = m_proxySSLEngine.createServerSocket(serverCN, serialno);
