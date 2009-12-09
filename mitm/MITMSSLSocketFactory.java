@@ -108,7 +108,7 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 	public MITMSSLSocketFactory(String remoteCN, BigInteger serialno)
 		throws IOException,GeneralSecurityException, Exception
 	{
-        // this();
+		// this();
 		// TODO: replace this with code to generate a new
 		// server certificate with common name remoteCN and serial number
 		// serialno
@@ -172,14 +172,14 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 
 		forged_cert.sign(AlgorithmID.sha256WithRSAEncryption, (RSAPrivateKey) myKey);
 		ks.setCertificateEntry("forged_cert", forged_cert);
-		ks.setKeyEntry("forged_key", myKey, keyStorePassword, 
-		    new Certificate[] { forged_cert });
+		ks.setKeyEntry("forged_key", myKey, keyStorePassword,
+					   new Certificate[] { forged_cert });
 		ks.store(new FileOutputStream("/tmp/.keystore2"), keyStorePassword);
 
 		ks.deleteEntry(ksalias);
 		keyManagerFactory.init(ks, keyStorePassword);
 		// java.security.Security.setProperty("ssl.KeyManagerFactory.algorithm", myKey.getAlgorithm());
-		
+
 		m_sslContext.init(keyManagerFactory.getKeyManagers(),
 						  new TrustManager[] { new TrustEveryone() },
 						  null);
