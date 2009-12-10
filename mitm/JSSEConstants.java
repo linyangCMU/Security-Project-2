@@ -12,4 +12,6 @@ public interface JSSEConstants
 		"javax.net.ssl.keyStoreAlias";
 
 	public final static String DEFAULT_ALIAS = "mykey";
+	public final static String PWD_KEYSTORE_LOCATION = ".pwd_keystore";
+	public final static String PWD_FILE_LOCATION = "users.txt";
 }

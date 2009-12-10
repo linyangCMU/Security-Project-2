@@ -9,16 +9,20 @@ import javax.crypto.Cipher;
 import java.util.Scanner;
 import java.security.SecureRandom;
 import javax.crypto.KeyGenerator;
+import java.security.KeyStore;
 import javax.crypto.SecretKey;
 import javax.crypto.Mac;
 import java.io.ByteArrayOutputStream;
+import java.security.cert.Certificate;
+import java.security.KeyStore.PasswordProtection;
+
 /**
- * javax.crypto.SealedObject could simplfiy our encryption
+  javax.crypto.SealedObject could simplfiy our encryption
  */
 public final class PasswordTool {
 
 	public static void main(String[] args) {
-        String fileString = args[0];
+	    String fileString = args[0];
 		String currentDirectory = System.getProperty("user.dir");
 		String curFile = currentDirectory + "/" + fileString;
 		File f = new File(curFile);
@@ -72,56 +76,73 @@ public final class PasswordTool {
 	private static void writeOutObjects(PasswordFile pwd, PepperFile pep, File f){
         
         try {
-            //Make a secret key for ciphering
+    	    KeyStore keystore = KeyStore.getInstance("JCEKS");
+    	    keystore.load(null, "bowdoincs".toCharArray());
+            // Make a secret key for ciphering the password/salt file
             KeyGenerator enckeygen = KeyGenerator.getInstance("AES");
-            SecretKey sKey = enckeygen.generateKey();
+            SecretKey saltKey = enckeygen.generateKey();
+	        keystore.setEntry("cipher_key", new KeyStore.SecretKeyEntry(saltKey), 
+	            new KeyStore.PasswordProtection("bowdoincs_salt".toCharArray()));
+	        // Make a separate secret key for ciphering the pepper file
+	        SecretKey pepperKey = enckeygen.generateKey();
+	        keystore.setEntry("pepper_key", new KeyStore.SecretKeyEntry(pepperKey), 
+	            new KeyStore.PasswordProtection("bowdoincs_pepper".toCharArray()));
 
-            //make a cipher for encrypting with secret key
-    	    Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
-    		cipher.init(Cipher.ENCRYPT_MODE, sKey);
+            // make a cipher for encrypting with secret key
+    	    Cipher salt_cipher = Cipher.getInstance("AES/CTR/NoPadding");
+    		salt_cipher.init(Cipher.ENCRYPT_MODE, saltKey);
+    		// and one for the pepper
+    		Cipher pepper_cipher = Cipher.getInstance("AES/CTR/NoPadding");
+    		pepper_cipher.init(Cipher.ENCRYPT_MODE, pepperKey);
 
             //encrypts password file as a sealedObject
-    		SealedObject cipherPwd = new SealedObject(pwd, cipher);
-    		System.out.println(cipherPwd);
+    		SealedObject cipherPwd = new SealedObject(pwd, salt_cipher);
+    		System.out.println("cipherPwd: " + cipherPwd);
+    		// In order to MAC it we need the bytestream, so
+    		// we print it to the byte array byteCipher.
     		ByteArrayOutputStream baos = new ByteArrayOutputStream();
     		ObjectOutputStream cipherOut = new ObjectOutputStream(baos);
             cipherOut.writeObject(cipherPwd);
-            cipherOut.flush();
             byte[] byteCipher = baos.toByteArray();
             cipherOut.close();
+            // Now we create the actual file on the disk
        		File finalPwdFile = new File(f + "Encrypted");
     		FileOutputStream fos = new FileOutputStream(finalPwdFile);
     
             fos.write(byteCipher);
 			fos.flush();
-			fos.close();
 
             // Generate secret key for HMAC-SHA1
 			KeyGenerator kg = KeyGenerator.getInstance("HMACSHA1");
-	        SecretKey sk = kg.generateKey();
+	        SecretKey mac_key = kg.generateKey();
+	        keystore.setEntry("mac_key", new KeyStore.SecretKeyEntry(mac_key), 
+	            new KeyStore.PasswordProtection("bowdoincs_mac".toCharArray()));
+	        keystore.store(new FileOutputStream(JSSEConstants.PWD_KEYSTORE_LOCATION), 
+	            "bowdoincs".toCharArray());
 
 	        // Get instance of Mac object implementing HMAC-MD5, and
 	        // initialize it with the above secret key
-	        Mac mac = Mac.getInstance("HmacMD5");
-	        mac.init(sk);
-	        byte[] result = mac.doFinal(byteCipher);
-       		
-       		File macFile = new File(f + "HMAC");
-    		FileOutputStream fos2 = new FileOutputStream(macFile);
-    		    
-            fos2.write(result);
-			fos2.flush();
-			fos2.close();
+	        Mac mac = Mac.getInstance("HMACSHA1");
+	        mac.init(mac_key);
+	        byte[] mac_code = mac.doFinal(byteCipher);
+       		System.out.println("MAC length: " + mac_code.length);
+       		String mac_string = "";
+            for (int i=0; i < mac_code.length; i++) {
+              mac_string +=
+                    Integer.toString( ( mac_code[i] & 0xff ) + 0x100, 16).substring( 1 );
+            }
+       		System.out.println("MAC: " + mac_string);
+
+            fos.write(mac_code);
+			fos.close();
 
 			File finalPepperFile = new File(f + "Pepper" + "Encrypted");
     		fos = new FileOutputStream(finalPepperFile);
-    		ObjectOutputStream oos = new ObjectOutputStream(fos);
+    		ObjectOutputStream pepper_oos = new ObjectOutputStream(fos);
 
-    		SealedObject cipherPepper = new SealedObject(pep, cipher);		
-			oos.writeObject(cipherPepper);
-			oos.flush();
-			oos.close();
-			fos.flush();
+    		SealedObject cipherPepper = new SealedObject(pep, pepper_cipher);		
+			pepper_oos.writeObject(cipherPepper);
+			pepper_oos.close();
 			fos.close();
 		}
 		catch (Exception e) { e.printStackTrace(); }
