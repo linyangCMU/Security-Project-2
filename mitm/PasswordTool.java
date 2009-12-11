@@ -80,9 +80,9 @@ public final class PasswordTool {
     	    keystore.load(null, "bowdoincs".toCharArray());
             // Make a secret key for ciphering the password/salt file
             KeyGenerator enckeygen = KeyGenerator.getInstance("AES");
-            SecretKey saltKey = enckeygen.generateKey();
-	        keystore.setEntry("cipher_key", new KeyStore.SecretKeyEntry(saltKey), 
-	            new KeyStore.PasswordProtection("bowdoincs_salt".toCharArray()));
+            SecretKey cipherKey = enckeygen.generateKey();
+	        keystore.setEntry("cipher_key", new KeyStore.SecretKeyEntry(cipherKey), 
+	            new KeyStore.PasswordProtection("bowdoincs_cipher".toCharArray()));
 	        // Make a separate secret key for ciphering the pepper file
 	        SecretKey pepperKey = enckeygen.generateKey();
 	        keystore.setEntry("pepper_key", new KeyStore.SecretKeyEntry(pepperKey), 
@@ -90,14 +90,13 @@ public final class PasswordTool {
 
             // make a cipher for encrypting with secret key
     	    Cipher salt_cipher = Cipher.getInstance("AES/CTR/NoPadding");
-    		salt_cipher.init(Cipher.ENCRYPT_MODE, saltKey);
+    		salt_cipher.init(Cipher.ENCRYPT_MODE, cipherKey);
     		// and one for the pepper
     		Cipher pepper_cipher = Cipher.getInstance("AES/CTR/NoPadding");
     		pepper_cipher.init(Cipher.ENCRYPT_MODE, pepperKey);
 
             //encrypts password file as a sealedObject
     		SealedObject cipherPwd = new SealedObject(pwd, salt_cipher);
-    		System.out.println("cipherPwd: " + cipherPwd);
     		// In order to MAC it we need the bytestream, so
     		// we print it to the byte array byteCipher.
     		ByteArrayOutputStream baos = new ByteArrayOutputStream();

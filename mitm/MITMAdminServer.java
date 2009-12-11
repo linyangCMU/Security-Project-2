@@ -5,11 +5,14 @@
 package mitm;
 
 import java.net.*;
+import javax.net.ssl.SSLServerSocket;
 import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 import java.security.KeyStore;
 import javax.crypto.SecretKey;
+import javax.crypto.Cipher;
+import javax.crypto.SealedObject;
 import javax.crypto.Mac;
 
 // You need to add code to do the following
@@ -25,10 +28,12 @@ class MITMAdminServer implements Runnable
 	public static final int MAC_LENGTH = 20;
 
 	public MITMAdminServer( String localHost, int adminPort, HTTPSProxyEngine engine ) throws IOException {
-		MITMPlainSocketFactory socketFactory =
-			new MITMPlainSocketFactory();
-		m_serverSocket = socketFactory.createServerSocket( localHost, adminPort, 0 );
-		m_engine = engine;
+		try {
+		    MITMSSLSocketFactory socketFactory =
+			    new MITMSSLSocketFactory();
+    		m_serverSocket = socketFactory.createServerSocket( localHost, adminPort, 0 );
+    		m_engine = engine;
+		} catch(Exception e) { e.printStackTrace(); }
 	}
 
 	public void run() {
@@ -62,6 +67,7 @@ class MITMAdminServer implements Runnable
 					String password = userPwdMatcher.group(2);
 
 					if( authenticateUser(userName, password) ) {
+					    System.out.println("User " + userName + " authenticated");
 						String command = userPwdMatcher.group(3);
 						String commonName = userPwdMatcher.group(4);
 						doCommand( command );
@@ -85,8 +91,6 @@ class MITMAdminServer implements Runnable
 	    KeyStore ks;
 	    
 	    try {
-	        ks = KeyStore.getInstance("JCEKS");
-	        ks.load(new FileInputStream(JSSEConstants.PWD_KEYSTORE_LOCATION), "bowdoincs".toCharArray());
             
             // now we have a keystore.
 
@@ -96,20 +100,41 @@ class MITMAdminServer implements Runnable
         
             inputStream.read(pwdFileByteArray);
             byte[] mac = new byte[MAC_LENGTH];
-            System.out.println("The MAC is " + inputStream.read(mac) + " bytes long.");
+            inputStream.read(mac);
             String mac_string = "";
             for (int i=0; i < mac.length; i++) {
               mac_string +=
                     Integer.toString( ( mac[i] & 0xff ) + 0x100, 16).substring( 1 );
             }
-            System.out.println("MAC we read in: " + mac_string);
 
+            ks = KeyStore.getInstance("JCEKS");
+	        ks.load(new FileInputStream(JSSEConstants.PWD_KEYSTORE_LOCATION), "bowdoincs".toCharArray());
+	        
             // Make sure that the MAC is valid for the encrypted passwords file.
             if (authenticateFile(pwdFileByteArray, mac, ks)) {
-                System.out.println("Encrypted pwd file authenticated.");
+                //remove to method 'decryptpasswordfile'
+                SecretKey cipherKey =
+                    (SecretKey) ks.getKey("cipher_key", "bowdoincs_cipher".toCharArray());
+        		
+        		ObjectInputStream objectStream = 
+        		    new ObjectInputStream(new ByteArrayInputStream(pwdFileByteArray));
+        		SealedObject encryptedPasswordFile = (SealedObject) objectStream.readObject();
+        		PasswordFile passwordFile = (PasswordFile) encryptedPasswordFile.getObject(cipherKey);
+        		System.out.println(passwordFile);
+        		// and one for the pepper
+    	        SecretKey pepperKey = 
+    	            (SecretKey) ks.getKey("pepper_key", "bowdoincs_pepper".toCharArray());
+        		objectStream.close();
+        		objectStream = new ObjectInputStream(new FileInputStream(
+        		    JSSEConstants.PWD_FILE_LOCATION + "PepperEncrypted"));
+        		SealedObject encryptedPepperFile = (SealedObject) objectStream.readObject();
+        		PepperFile pepperFile = (PepperFile) encryptedPepperFile.getObject(pepperKey);
+        		System.out.println(pepperFile);
+        		
                 // Finally authenticate user against pwdFile
-                // String pepper = pepperFile.get(u);
-                // return pwdFile.checkUser(u, p, pepper);
+                
+                String pepper = pepperFile.get(u);
+                return passwordFile.checkUser(u, p, pepper);
             } else {
                 System.out.println("PWD FILE HAS BEEN TAMPERED WITH");
                 System.exit(1);
@@ -145,9 +170,16 @@ class MITMAdminServer implements Runnable
 
 	// TODO implement the commands
 	private void doCommand( String cmd ) throws IOException {
-        
+	    String c = cmd.toLowerCase();
+	    System.out.println("running cmd" + c);
+	    if ( c.equals("stats") ){
+	        
+            System.out.println( "suck it");
+        }
+        else if ( c.equals("exit") ){
+            System.exit(1);
+	    }
 		m_socket.close();
-
 	}
 
 }

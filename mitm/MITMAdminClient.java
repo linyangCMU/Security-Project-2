@@ -67,8 +67,8 @@ public class MITMAdminClient
 					}
 				}
 
-			// TODO upgrade this to an SSL connection
-			m_remoteSocket = new Socket( remoteHost, remotePort );
+            MITMSSLSocketFactory socketFactory = new MITMSSLSocketFactory();
+    		m_remoteSocket = socketFactory.createClientSocket( remoteHost, remotePort );
 
 		}
 		catch (Exception e) {
