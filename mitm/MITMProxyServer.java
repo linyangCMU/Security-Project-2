@@ -87,13 +87,13 @@ public class MITMProxyServer
 					} else if (args[i].equals("-timeout")) {
 						timeout = Integer.parseInt(args[++i]) * 1000;
 					} else if( args[i].equals("-pwdFile")) {
-					    System.setProperty(JSSEConstants.PWD_FILE_LOCATION,
-					                       args[++i]);
-                                       System.out.println(JSSEConstants.PWD_FILE_LOCATION);
-                                       System.out.println(args[i]);
-                    } else if( args[i].equals("-pwdKeystore")) {
-                        System.setProperty(JSSEConstants.PWD_KEYSTORE_LOCATION,
-                                           args[++i]);
+						System.setProperty(JSSEConstants.PWD_FILE_LOCATION,
+										   args[++i]);
+						System.out.println(JSSEConstants.PWD_FILE_LOCATION);
+						System.out.println(args[i]);
+					} else if( args[i].equals("-pwdKeystore")) {
+						System.setProperty(JSSEConstants.PWD_KEYSTORE_LOCATION,
+										   args[++i]);
 					} else if (args[i].equals("-adminPort")) {
 						adminPort = Integer.parseInt(args[++i]);
 					} else if (args[i].equals("-outputFile")) {
@@ -122,11 +122,11 @@ public class MITMProxyServer
 
 		System.err.println(startMessage);
 		try {
-    		FileWriter fw = new FileWriter(JSSEConstants.STATS_FILE_LOCATION);
-    		fw.write("0");
-    		fw.close();
+			FileWriter fw = new FileWriter(JSSEConstants.STATS_FILE_LOCATION);
+			fw.write("0");
+			fw.close();
 		} catch (Exception e) {
-		    e.printStackTrace();
+			e.printStackTrace();
 		}
 
 		try {

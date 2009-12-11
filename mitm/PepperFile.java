@@ -16,32 +16,31 @@ public class PepperFile implements Serializable{
 		peppers = new Hashtable(3);
 
 	}
-	
-	protected void addEntry(String u, String pepper) {
-        peppers.put(u, pepper);
-	}
-	
-	public String get(String u) {
-	    try {
-	        return peppers.get(u);
-	    } catch (Exception e) {
-	        return "";
-	    }
-	}
-	
-	public String toString() {
-	    String output = "";
-	    String user;
-	    try {
-	        for (Enumeration<String> e = peppers.keys(); e.hasMoreElements();) {
-	            user = e.nextElement();
-	            output += "User " + user + " has pepper " + peppers.get(user) + "\n";
-	        }
-	    } catch (Exception ex) {
-	        ex.printStackTrace();
-	    }
-	    return output;
-	}
-		
-}
 
+	protected void addEntry(String u, String pepper) {
+		peppers.put(u, pepper);
+	}
+
+	public String get(String u) {
+		try {
+			return peppers.get(u);
+		} catch (Exception e) {
+			return "";
+		}
+	}
+
+	public String toString() {
+		String output = "";
+		String user;
+		try {
+			for (Enumeration<String> e = peppers.keys(); e.hasMoreElements();) {
+				user = e.nextElement();
+				output += "User " + user + " has pepper " + peppers.get(user) + "\n";
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return output;
+	}
+
+}

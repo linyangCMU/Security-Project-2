@@ -18,30 +18,30 @@ public class PasswordFile implements Serializable{
 		passwords = new Hashtable(3);
 
 	}
-	
+
 	protected void addEntry(String u, String p, String salt, String pepper) {
-	    byte[] pwd;
-	    try {
-    	    MessageDigest md = MessageDigest.getInstance("MD5");
-    	    md.update((salt + pepper + p).getBytes());
-            pwd = md.digest();
-            passwords.put(u, new PwdEntry(salt, pwd));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		byte[] pwd;
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			md.update((salt + pepper + p).getBytes());
+			pwd = md.digest();
+			passwords.put(u, new PwdEntry(salt, pwd));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-	
+
 	public boolean checkUser(String u, String p, String pepper) {
-	    try {
-	        PwdEntry user = passwords.get(u);
-	        String salt = user.salt;
-	        byte[] hashed_pwd = user.pwd;
-	        MessageDigest md = MessageDigest.getInstance("MD5");
-	        md.update((salt + pepper + p).getBytes());
-	        byte[] calculated_pwd = md.digest();
-	        return Arrays.equals(hashed_pwd, calculated_pwd);
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
+		try {
+			PwdEntry user = passwords.get(u);
+			String salt = user.salt;
+			byte[] hashed_pwd = user.pwd;
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			md.update((salt + pepper + p).getBytes());
+			byte[] calculated_pwd = md.digest();
+			return Arrays.equals(hashed_pwd, calculated_pwd);
+		} catch (Exception e) { e.printStackTrace(); }
+		return false;
 	}
 
 	private class PwdEntry implements Serializable{
@@ -52,32 +52,31 @@ public class PasswordFile implements Serializable{
 			salt = s;
 			pwd = p;
 		}
-		
+
 	}
-	
+
 	public String byteArrayToString(byte[] in) {
-	    String out_string = "";
-        for (int i=0; i < in.length; i++) {
-          out_string +=
-                Integer.toString( ( in[i] & 0xff ) + 0x100, 16).substring( 1 );
-        }
+		String out_string = "";
+		for (int i=0; i < in.length; i++) {
+			out_string +=
+				Integer.toString( ( in[i] & 0xff ) + 0x100, 16).substring( 1 );
+		}
    		return out_string;
 	}
-	
+
 	public String toString() {
-	    String output = "";
-	    String user;
-	    for (Enumeration<String> e = passwords.keys(); e.hasMoreElements();) {
-	        try {
-	            user = e.nextElement();
-	            PwdEntry p = passwords.get(user);
-    	        output += "Users " + user + " has salt " + p.salt + 
-    	            " and password array at " + p.pwd + "\n";
-	        } catch (Exception ex) {
-	            ex.printStackTrace();
-	        }
-	    }
-	    return output;
+		String output = "";
+		String user;
+		for (Enumeration<String> e = passwords.keys(); e.hasMoreElements();) {
+			try {
+				user = e.nextElement();
+				PwdEntry p = passwords.get(user);
+				output += "Users " + user + " has salt " + p.salt +
+					" and password array at " + p.pwd + "\n";
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		return output;
 	}
 }
-
