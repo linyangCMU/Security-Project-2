@@ -39,11 +39,8 @@ public class PasswordFile implements Serializable{
 	        MessageDigest md = MessageDigest.getInstance("MD5");
 	        md.update((salt + pepper + p).getBytes());
 	        byte[] calculated_pwd = md.digest();
-	        System.out.println("calculated_pwd: " + byteArrayToString(calculated_pwd));
-	        System.out.println("hashed_pwd: " + byteArrayToString(hashed_pwd));
 	        return Arrays.equals(hashed_pwd, calculated_pwd);
         } catch (Exception e) { e.printStackTrace(); }
-        System.out.println("THIS IS BAD PRACTICE");
         return false;
 	}
 

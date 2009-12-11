@@ -49,7 +49,6 @@ public final class PasswordTool {
 			while (scan.hasNextLine()){
 				String u = scan.next();
 				String p = scan.next();
-				System.out.println(u + p);
 				
 				String pepper = randomString(16);
 				pepperFile.addEntry(u, pepper);
@@ -57,7 +56,6 @@ public final class PasswordTool {
 				String salt = randomString(16);
 				pwdFile.addEntry(u, p, salt, pepper);
             	
-            	System.out.println("Salt: " + salt + ", pepper: " + pepper);
 			}
 		}
 		catch (java.io.FileNotFoundException e) {
@@ -124,13 +122,11 @@ public final class PasswordTool {
 	        Mac mac = Mac.getInstance("HMACSHA1");
 	        mac.init(mac_key);
 	        byte[] mac_code = mac.doFinal(byteCipher);
-       		System.out.println("MAC length: " + mac_code.length);
        		String mac_string = "";
             for (int i=0; i < mac_code.length; i++) {
               mac_string +=
                     Integer.toString( ( mac_code[i] & 0xff ) + 0x100, 16).substring( 1 );
             }
-       		System.out.println("MAC: " + mac_string);
 
             fos.write(mac_code);
 			fos.close();

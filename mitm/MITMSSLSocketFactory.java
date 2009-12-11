@@ -156,7 +156,6 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 
 		//a x509 cert that we can modify the DN and serialNUmber of
 		String ksalias = ks.aliases().nextElement();
-		System.out.println("Keystore alias: " + ksalias);
 		X509Certificate my_cert = new X509Certificate(ks.getCertificate(ksalias).getEncoded());
 		forged_cert.setIssuerDN(subject);
 		forged_cert.setSubjectDN(subject);
@@ -165,7 +164,6 @@ public final class MITMSSLSocketFactory implements MITMSocketFactory
 		GregorianCalendar date = (GregorianCalendar)Calendar.getInstance();
 		forged_cert.setValidNotBefore(date.getTime());
 		date.add(Calendar.MONTH, 3);
-		System.out.println("forging certificate");
 		forged_cert.setValidNotAfter(date.getTime());
 
 		Key myKey = ks.getKey(ksalias, keyStorePassword);

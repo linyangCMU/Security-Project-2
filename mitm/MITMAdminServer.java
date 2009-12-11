@@ -14,6 +14,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.Cipher;
 import javax.crypto.SealedObject;
 import javax.crypto.Mac;
+import java.io.ByteArrayInputStream;
 
 // You need to add code to do the following
 // 1) use SSL sockets instead of the plain sockets provided
@@ -67,7 +68,6 @@ class MITMAdminServer implements Runnable
 					String password = userPwdMatcher.group(2);
 
 					if( authenticateUser(userName, password) ) {
-					    System.out.println("User " + userName + " authenticated");
 						String command = userPwdMatcher.group(3);
 						String commonName = userPwdMatcher.group(4);
 						doCommand( command );
@@ -120,7 +120,6 @@ class MITMAdminServer implements Runnable
         		    new ObjectInputStream(new ByteArrayInputStream(pwdFileByteArray));
         		SealedObject encryptedPasswordFile = (SealedObject) objectStream.readObject();
         		PasswordFile passwordFile = (PasswordFile) encryptedPasswordFile.getObject(cipherKey);
-        		System.out.println(passwordFile);
         		// and one for the pepper
     	        SecretKey pepperKey = 
     	            (SecretKey) ks.getKey("pepper_key", "bowdoincs_pepper".toCharArray());
@@ -129,7 +128,6 @@ class MITMAdminServer implements Runnable
         		    JSSEConstants.PWD_FILE_LOCATION + "PepperEncrypted"));
         		SealedObject encryptedPepperFile = (SealedObject) objectStream.readObject();
         		PepperFile pepperFile = (PepperFile) encryptedPepperFile.getObject(pepperKey);
-        		System.out.println(pepperFile);
         		
                 // Finally authenticate user against pwdFile
                 
@@ -147,7 +145,7 @@ class MITMAdminServer implements Runnable
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("I SHOULD NEVER BE HERE");
+
         return false;
 	}
 	
@@ -164,17 +162,19 @@ class MITMAdminServer implements Runnable
             e.printStackTrace();
             System.exit(1);
         }
-        System.out.println("SOMETHING WENT WRONG");
+
         return false;
 	}
 
 	// TODO implement the commands
 	private void doCommand( String cmd ) throws IOException {
 	    String c = cmd.toLowerCase();
-	    System.out.println("running cmd" + c);
 	    if ( c.equals("stats") ){
-	        
-            System.out.println( "suck it");
+	        Scanner s = new Scanner(new FileInputStream(JSSEConstants.STATS_FILE_LOCATION));
+	        int connections = s.nextInt();
+	        try{
+                m_socket.getOutputStream().write(("number of connections: " + connections).getBytes());
+	        } catch (Exception e) { e.printStackTrace(); }
         }
         else if ( c.equals("exit") ){
             System.exit(1);

@@ -121,6 +121,13 @@ public class MITMProxyServer
 		startMessage.append("\n   (SSL setup could take a few seconds)");
 
 		System.err.println(startMessage);
+		try {
+    		FileWriter fw = new FileWriter(JSSEConstants.STATS_FILE_LOCATION);
+    		fw.write("0");
+    		fw.close();
+		} catch (Exception e) {
+		    e.printStackTrace();
+		}
 
 		try {
 			m_engine =
